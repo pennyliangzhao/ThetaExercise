@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -7,34 +8,55 @@ namespace ThetaExercise
 {
     class Program
     {
-        static void Main(string[] args)
-        {
-            string filePath = @"C:\Users\zhaolian2\Desktop\weather.txt";
-            List<DailyTemp> temps = new List<DailyTemp>();
-            List<string> lines = File.ReadLines(filePath).Skip(8).Take(30).ToList();
+        private const String filePath = @"C:\Users\zhaolian2\Desktop\weather.txt";
+        private char[] ignoreChar = {'*'};
 
+        public Program() {
+            temperatureAnalysis();
+        }
+
+        private void temperatureAnalysis() {
+            List<string> lines = File.ReadLines(filePath).Skip(8).Take(30).ToList();
+            List<DailyTemp> temps = createTemperatureList(lines);
+            temps.Sort((x, y) => x.Dif.CompareTo(y.Dif));
+            var minDifDay = temps.First();
+            Console.WriteLine(" The day is: NO.{0} with the lowest minimum difference between the maximum temperature and the minimum temperature: {1}.", minDifDay.Dy, minDifDay.Dif);
+        }
+
+        private List<DailyTemp> createTemperatureList(List<string> lines)
+        {
+            List<DailyTemp> temps = new List<DailyTemp>();
             foreach (var line in lines)
             {
-         
-                string[] entries = new string[5];
-              
-                DailyTemp newDailyTemp = new DailyTemp();
+                try
+                {
+                    string[] entries = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    DailyTemp newDailyTemp = new DailyTemp();
+                    NumberFormatInfo numFormatInfo = new NumberFormatInfo();
+                    numFormatInfo.NumberDecimalSeparator = ".";
+                    newDailyTemp.Dy = entries[0];
+                    newDailyTemp.Dif = Convert.ToDouble(entries[1].TrimEnd(ignoreChar), numFormatInfo) - Convert.ToDouble(entries[2].TrimEnd(ignoreChar), numFormatInfo);
+                    temps.Add(newDailyTemp);
+                }
+                catch (FormatException exception)
+                {
+                    Console.WriteLine(exception.Message);
+                }
+                catch (OverflowException exception)
+                {
+                    Console.WriteLine(exception.Message);
+                }
 
-                newDailyTemp.Dy =entries[0];
-                newDailyTemp.MxT = entries[1];
-                newDailyTemp.MnT = entries[2];
-                temps.Add(newDailyTemp);
 
-                
             }
-            foreach (var dailyTemp in temps)
-            {
+            return temps;
+        }
 
-                Console.WriteLine($"{dailyTemp.Dy}:{dailyTemp.MxT},{dailyTemp.MnT}");
-            }
-
-            Console.ReadLine();
-
+        static void Main(string[] args)
+        {
+            new Program();
         }
     }
+
+
 }
